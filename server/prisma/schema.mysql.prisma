@@ -1,0 +1,209 @@
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  ADMIN
+  TEACHER
+  STUDENT
+}
+
+enum QuestionType {
+  MCQ
+  TRUE_FALSE
+}
+
+enum Difficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
+enum ExamStatus {
+  DRAFT
+  SCHEDULED
+  ONGOING
+  COMPLETED
+}
+
+enum SubmissionStatus {
+  IN_PROGRESS
+  SUBMITTED
+  TIMED_OUT
+}
+
+model User {
+  id             String         @id @default(uuid())
+  name           String
+  email          String         @unique
+  password       String
+  role           Role           @default(STUDENT)
+  isActive       Boolean        @default(true)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  createdExams   Exam[]         @relation("TeacherExams")
+  questions      Question[]     @relation("TeacherQuestions")
+  submissions    Submission[]   @relation("StudentSubmissions")
+  notifications  Notification[]
+  supportTickets SupportTicket[]
+}
+
+model Subject {
+  id          String     @id @default(uuid())
+  name        String     @unique
+  code        String     @unique
+  description String?
+  createdAt   DateTime   @default(now())
+
+  exams       Exam[]
+  questions   Question[]
+}
+
+model Question {
+  id                 String             @id @default(uuid())
+  subjectId          String
+  teacherId          String
+  text               String             @db.Text
+  explanation        String?            @db.Text
+  type               QuestionType       @default(MCQ)
+  difficulty         Difficulty         @default(MEDIUM)
+  marks              Float              @default(1.0)
+  negativeMarks      Float              @default(0.0)
+  createdAt          DateTime           @default(now())
+
+  subject            Subject            @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  teacher            User               @relation("TeacherQuestions", fields: [teacherId], references: [id], onDelete: Cascade)
+  options            Option[]
+  examQuestions      ExamQuestion[]
+  submissionAnswers  SubmissionAnswer[]
+
+  @@index([subjectId])
+  @@index([teacherId])
+}
+
+model Option {
+  id         String     @id @default(uuid())
+  questionId String
+  text       String     @db.Text
+  isCorrect  Boolean    @default(false)
+
+  question   Question   @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@index([questionId])
+}
+
+model Exam {
+  id              String         @id @default(uuid())
+  title           String
+  description     String?        @db.Text
+  subjectId       String
+  teacherId       String
+  durationMinutes Int            @default(30)
+  totalMarks      Float          @default(100.0)
+  passMarks       Float          @default(40.0)
+  negativeMarking Float          @default(0.0)
+  status          ExamStatus     @default(SCHEDULED)
+  scheduledAt     DateTime?
+  createdAt       DateTime       @default(now())
+
+  subject         Subject        @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  teacher         User           @relation("TeacherExams", fields: [teacherId], references: [id], onDelete: Cascade)
+  examQuestions   ExamQuestion[]
+  submissions     Submission[]
+
+  @@index([subjectId])
+  @@index([teacherId])
+}
+
+model ExamQuestion {
+  id         String   @id @default(uuid())
+  examId     String
+  questionId String
+  orderIndex Int      @default(0)
+
+  exam       Exam     @relation(fields: [examId], references: [id], onDelete: Cascade)
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@unique([examId, questionId])
+  @@index([questionId])
+}
+
+model Submission {
+  id          String             @id @default(uuid())
+  examId      String
+  studentId   String
+  startedAt   DateTime           @default(now())
+  submittedAt DateTime?
+  score       Float              @default(0.0)
+  totalMarks  Float              @default(0.0)
+  percentage  Float              @default(0.0)
+  passed      Boolean            @default(false)
+  status      SubmissionStatus   @default(IN_PROGRESS)
+
+  exam        Exam               @relation(fields: [examId], references: [id], onDelete: Cascade)
+  student     User               @relation("StudentSubmissions", fields: [studentId], references: [id], onDelete: Cascade)
+  answers     SubmissionAnswer[]
+  cheatingLogs CheatingLog[]
+
+  @@index([examId])
+  @@index([studentId])
+}
+
+model SubmissionAnswer {
+  id               String      @id @default(uuid())
+  submissionId     String
+  questionId       String
+  selectedOptionId String?
+  isCorrect        Boolean     @default(false)
+  marksAwarded     Float       @default(0.0)
+
+  submission       Submission  @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  question         Question    @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@index([submissionId])
+  @@index([questionId])
+}
+
+model CheatingLog {
+  id           String      @id @default(uuid())
+  submissionId String
+  eventType    String
+  timestamp    DateTime    @default(now())
+  details      String?
+
+  submission   Submission  @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+
+  @@index([submissionId])
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  title     String
+  message   String   @db.Text
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model SupportTicket {
+  id        String   @id @default(uuid())
+  userId    String
+  subject   String
+  message   String   @db.Text
+  status    String   @default("OPEN")
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}

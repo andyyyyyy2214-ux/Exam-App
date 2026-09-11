@@ -1,0 +1,45 @@
+{
+  "expo": {
+    "name": "EduAssess",
+    "slug": "anand-exam-app",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#1e3a8a"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.anand.examapp"
+    },
+    "android": {
+      "package": "com.anand.examapp",
+      "versionCode": 1,
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#1e3a8a"
+      },
+      "permissions": [
+        "INTERNET"
+      ]
+    },
+    "androidStatusBar": {
+      "barStyle": "dark-content",
+      "backgroundColor": "#ffffff",
+      "translucent": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "4e621d9e-5c3a-44e2-8f8b-f461e6edf709"
+      },
+      "serverUrl": "http://192.168.0.103:5000"
+    }
+  }
+}
